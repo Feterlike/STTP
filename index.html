@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Subtitle Translator</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23007bff'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3EFA%3C/text%3E%3C/svg%3E"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+      }
+
+      body {
+        background-color: #f5f5f5;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 800px;
+        width: 100%;
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 30px;
+      }
+
+      .api-key-section {
+        margin-bottom: 30px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .api-key-section input {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+
+      .api-key-section button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+
+      .api-key-section button:hover {
+        background: #0056b3;
+      }
+
+      .drop-zone {
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-bottom: 20px;
+      }
+
+      .drop-zone.dragover {
+        border-color: #007bff;
+        background: #f0f7ff;
+      }
+
+      .drop-zone svg {
+        width: 64px;
+        height: 64px;
+        margin-bottom: 15px;
+      }
+
+      .drop-zone p {
+        color: #666;
+        margin: 10px 0;
+      }
+
+      .file-info {
+        display: none;
+        margin: 20px 0;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .file-info p {
+        margin: 5px 0;
+        color: #333;
+      }
+
+      .translate-btn {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background 0.3s;
+      }
+
+      .translate-btn:hover {
+        background: #218838;
+      }
+
+      .progress-container {
+        display: none;
+        margin-top: 20px;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 20px;
+        background: #f0f0f0;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      .progress-bar div {
+        width: 0;
+        height: 100%;
+        background: #007bff;
+        transition: width 0.3s;
+      }
+
+      .progress-text {
+        text-align: center;
+        margin-top: 10px;
+        color: #666;
+      }
+
+      .notification {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 20px;
+        border-radius: 5px;
+        z-index: 1000;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      }
+
+      .notification.info {
+        background-color: #e3f2fd;
+        color: #1565c0;
+      }
+
+      .notification.error {
+        background-color: #ffebee;
+        color: #c62828;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Subtitle Translator To Persian</h1>
+
+      <div class="api-key-section">
+        <input
+          type="text"
+          id="apiKey"
+          placeholder="Enter your Gemini API key"
+        />
+        <a
+          href="https://aistudio.google.com/u/0/apikey"
+          target="_blank"
+          style="
+            margin-left: 10px;
+            color: #007bff;
+            text-decoration: underline;
+            font-size: 14px;
+          "
+          >Get your Gemini API key</a
+        >
+      </div>
+
+      <div id="dropZone" class="drop-zone">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M12 16L12 8"
+            stroke="#666"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M9 13L12 16 15 13"
+            stroke="#666"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M20 16.7428C21.2215 15.734 22 14.2079 22 12.5C22 9.46243 19.5376 7 16.5 7C16.2815 7 16.0771 6.886 15.9661 6.69774C14.6621 4.48484 12.2544 3 9.5 3C5.35786 3 2 6.35786 2 10.5C2 12.5661 2.83545 14.4371 4.18695 15.7935"
+            stroke="#666"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M8 16H16"
+            stroke="#666"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M8 20H16"
+            stroke="#666"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <p>Drag & Drop your subtitle file here</p>
+        <p>or</p>
+        <input
+          type="file"
+          id="fileInput"
+          accept=".srt,.vtt"
+          style="display: none"
+        />
+        <button onclick="document.getElementById('fileInput').click()">
+          Choose File
+        </button>
+      </div>
+
+      <div id="fileInfo" class="file-info">
+        <p>Selected file: <span id="fileName"></span></p>
+      </div>
+
+      <button id="translateBtn" class="translate-btn">
+        Translate to Persian
+      </button>
+
+      <div id="progressContainer" class="progress-container">
+        <div class="progress-bar">
+          <div id="progressBar"></div>
+        </div>
+        <p id="progressText" class="progress-text">Starting translation...</p>
+      </div>
+    </div>
+
+    <script>
+      // Constants
+      const CHUNK_SIZE = 50; // Number of subtitles to process at once
+      const API_ENDPOINT =
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+
+      // DOM Elements
+      const dropZone = document.getElementById("dropZone");
+      const fileInput = document.getElementById("fileInput");
+      const fileInfo = document.getElementById("fileInfo");
+      const fileName = document.getElementById("fileName");
+      const translateBtn = document.getElementById("translateBtn");
+      const progressContainer = document.getElementById("progressContainer");
+      const progressBar = document.getElementById("progressBar");
+      const progressText = document.getElementById("progressText");
+      const apiKeyInput = document.getElementById("apiKey");
+
+      // Event Listeners
+      dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("dragover");
+      });
+
+      dropZone.addEventListener("dragleave", () => {
+        dropZone.classList.remove("dragover");
+      });
+
+      dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("dragover");
+        const file = e.dataTransfer.files[0];
+        handleFile(file);
+      });
+
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        handleFile(file);
+      });
+
+      translateBtn.addEventListener("click", async () => {
+        const apiKey = apiKeyInput.value.trim();
+        if (!apiKey) {
+          alert("Please enter your Gemini API key first");
+          return;
+        }
+        localStorage.setItem("geminiApiKey", apiKey); // Store for session use
+        await translateSubtitles();
+      });
+
+      // File handling functions
+      function handleFile(file) {
+        if (!file) return;
+
+        const validTypes = [".srt", ".vtt"];
+        const fileExtension = file.name
+          .substring(file.name.lastIndexOf("."))
+          .toLowerCase();
+
+        if (!validTypes.includes(fileExtension)) {
+          alert("Please upload a valid subtitle file (.srt or .vtt)");
+          return;
+        }
+
+        // Hide the drop zone
+        dropZone.style.display = "none";
+
+        // Show file info
+        fileName.textContent = file.name;
+        fileInfo.style.display = "block";
+        window.currentFile = file;
+      }
+
+      // Add function to reset the upload area
+      function resetUpload() {
+        // Clear the current file
+        window.currentFile = null;
+        fileInput.value = "";
+
+        // Hide file info
+        fileInfo.style.display = "none";
+        fileName.textContent = "";
+
+        // Show drop zone again
+        dropZone.style.display = "block";
+
+        // Reset progress
+        progressContainer.style.display = "none";
+        progressBar.style.width = "0%";
+        progressText.textContent = "";
+      }
+
+      function showNotification(message, type = "info") {
+        const notification = document.createElement("div");
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+
+        document.body.appendChild(notification);
+
+        // Remove notification after 5 seconds
+        setTimeout(() => {
+          notification.style.opacity = "0";
+          notification.style.transition = "opacity 0.5s ease";
+          setTimeout(() => document.body.removeChild(notification), 500);
+        }, 5000);
+      }
+
+      async function parseSubtitleFile(file) {
+        const text = await file.text();
+        const lines = text.split("\n");
+        const subtitles = [];
+        let currentSubtitle = null;
+        let currentTimestamp = "";
+        let currentIndex = 0;
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+
+          if (!line) continue;
+
+          if (/^\d+$/.test(line)) {
+            if (currentSubtitle) {
+              subtitles.push(currentSubtitle);
+            }
+            currentIndex = parseInt(line);
+            currentSubtitle = {
+              index: currentIndex,
+              text: "",
+              timestamp: "",
+            };
+          } else if (line.includes("-->")) {
+            currentTimestamp = line;
+            if (currentSubtitle) {
+              currentSubtitle.timestamp = currentTimestamp;
+            }
+          } else if (currentSubtitle) {
+            if (currentSubtitle.text) {
+              currentSubtitle.text += "\n" + line;
+            } else {
+              currentSubtitle.text = line;
+            }
+          }
+        }
+
+        if (currentSubtitle) {
+          subtitles.push(currentSubtitle);
+        }
+
+        return subtitles;
+      }
+
+      async function translateSubtitles() {
+        if (!window.currentFile) return;
+
+        const subtitles = await parseSubtitleFile(window.currentFile);
+        const chunks = [];
+
+        for (let i = 0; i < subtitles.length; i += CHUNK_SIZE) {
+          chunks.push(subtitles.slice(i, i + CHUNK_SIZE));
+        }
+
+        progressContainer.style.display = "block";
+        progressBar.style.width = "0%";
+        progressText.textContent = "Starting translation...";
+        const translatedSubtitles = [];
+
+        try {
+          for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+            progressText.textContent = `Processing chunk ${i + 1} of ${
+              chunks.length
+            }...`;
+            const translatedChunk = await processChunk(chunk, i, chunks.length);
+            translatedSubtitles.push(...translatedChunk);
+
+            const progress = ((i + 1) / chunks.length) * 100;
+            progressBar.style.width = `${progress}%`;
+            progressText.textContent = `Processing: ${Math.round(progress)}%`;
+          }
+
+          const outputContent = generateSubtitleFile(
+            translatedSubtitles,
+            window.currentFile.name
+          );
+          downloadFile(outputContent, window.currentFile.name);
+          progressText.textContent = "Translation complete!";
+
+          // After successful translation, add a slight delay before resetting
+          setTimeout(() => {
+            resetUpload();
+          }, 2000);
+        } catch (error) {
+          if (error.message === "API_KEY_ERROR") {
+            console.error("Translation process halted due to API Key Error.");
+          } else {
+            console.error(
+              "An error occurred during the translation process:",
+              error
+            );
+            alert(
+              "An unexpected error occurred during translation. Please check the console for details."
+            );
+            progressText.textContent = "Translation failed.";
+          }
+        }
+      }
+
+      async function processChunk(chunk, chunkIndex, totalChunks) {
+        const apiKey = localStorage.getItem("geminiApiKey");
+        const translatedChunk = [];
+        const emptySubtitles = [];
+
+        try {
+          // Check for empty subtitles before processing
+          chunk.forEach((subtitle, idx) => {
+            if (!subtitle.text || subtitle.text.trim() === "") {
+              emptySubtitles.push({
+                index: subtitle.index,
+                timestamp: subtitle.timestamp,
+              });
+            }
+          });
+
+          if (emptySubtitles.length > 0) {
+            const message = `Found ${emptySubtitles.length} empty subtitle${
+              emptySubtitles.length > 1 ? "s" : ""
+            } in the file. These will be skipped.`;
+            showNotification(message, "info");
+            console.warn("Empty subtitles found:", emptySubtitles);
+          }
+
+          if (!apiKey || apiKey.trim() === "") {
+            throw new Error("API_KEY_MISSING");
+          }
+
+          const subtitlesToTranslate = chunk.map((subtitle, idx) => ({
+            index: subtitle.index,
+            text: subtitle.text,
+          }));
+
+          const system_prompt = `
+YOU ARE A SUBTITLE TRANSLATION ENGINE.
+YOUR ONLY TASK IS TO TRANSLATE THE 'text' FIELD OF EVERY JSON OBJECT IN THE PROVIDED ARRAY TO PERSIAN (Farsi).
+
+INPUT: You will receive a JSON array of objects. Each object will have an 'index' and 'text' (the subtitle text to translate).
+
+OUTPUT SPECIFICATION (CRITICAL):
+- YOUR RESPONSE MUST BE A SINGLE, VALID JSON ARRAY. NOTHING ELSE.
+- DO NOT PREFIX WITH 'json', MARKDOWN, OR ANY OTHER TEXT.
+- YOUR RESPONSE MUST START WITH '[' AND END WITH ']'.
+- Each object in your output JSON array MUST correspond to an input object.
+- Each output object MUST contain:
+    1. 'index': The IDENTICAL integer 'index' from the input object.
+    2. 'text': The PERSIAN (Farsi) TRANSLATION of the original 'text'.
+
+IMPORTANT: DO NOT USE ANY SPECIAL CHARACTERS IN YOUR TRANSLATIONS. REPLACE ALL SPECIAL CHARACTERS WITH THEIR EQUIVALENT PERSIAN CHARACTERS.
+- Use Persian punctuation marks instead of English ones
+- Replace newlines with spaces
+- Do not use any backslashes or quotes in the translation
+- Keep the translation simple and clean
+
+EXAMPLE:
+INPUT: [{"index": 0, "text": "Hello\nWorld!"}, {"index": 1, "text": "She said: \"Hi\""}]
+OUTPUT: [{"index": 0, "text": "سلام دنیا"}, {"index": 1, "text": "او گفت سلام"}]
+`;
+
+          const user_prompt = `Translate the following subtitles to PERSIAN (Farsi). Return ONLY the JSON array with translations:
+${JSON.stringify(subtitlesToTranslate, null, 2)}`;
+
+          const requestBody = {
+            contents: [
+              {
+                parts: [{ text: system_prompt }, { text: user_prompt }],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.1,
+              topK: 1,
+              topP: 0.8,
+              maxOutputTokens: 2048,
+            },
+            safetySettings: [
+              {
+                category: "HARM_CATEGORY_HARASSMENT",
+                threshold: "BLOCK_NONE",
+              },
+              {
+                category: "HARM_CATEGORY_HATE_SPEECH",
+                threshold: "BLOCK_NONE",
+              },
+              {
+                category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                threshold: "BLOCK_NONE",
+              },
+              {
+                category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+                threshold: "BLOCK_NONE",
+              },
+            ],
+          };
+
+          const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(requestBody),
+          });
+
+          if (!response.ok) {
+            throw new Error(
+              `API request failed with status ${response.status}`
+            );
+          }
+
+          const responseData = await response.json();
+
+          if (
+            !responseData.candidates ||
+            !responseData.candidates[0]?.content?.parts?.[0]?.text
+          ) {
+            throw new Error("Invalid API response structure");
+          }
+
+          let translationText =
+            responseData.candidates[0].content.parts[0].text.trim();
+
+          // Clean up the response text
+          translationText = translationText.replace(/^json\s*/i, ""); // Remove any "json" prefix
+          translationText = translationText.replace(
+            /[\u0000-\u001F\u007F-\u009F]/g,
+            ""
+          ); // Remove control characters
+
+          // Find the JSON array in the response
+          const jsonMatch = translationText.match(/\[[\s\S]*\]/);
+          if (!jsonMatch) {
+            throw new Error("No JSON array found in response");
+          }
+
+          let translations;
+          try {
+            translations = JSON.parse(jsonMatch[0]);
+          } catch (parseError) {
+            console.error("JSON Parse Error:", parseError);
+            console.error("Problematic JSON:", jsonMatch[0]);
+            throw new Error("Failed to parse JSON response");
+          }
+
+          if (!Array.isArray(translations)) {
+            throw new Error("Parsed response is not an array");
+          }
+
+          // Create a map of translations by index
+          const translationMap = new Map(translations.map((t) => [t.index, t]));
+
+          // Process each subtitle in the original chunk
+          chunk.forEach((subtitle) => {
+            const translation = translationMap.get(subtitle.index);
+            if (translation && translation.text) {
+              // Clean up the translated text
+              let cleanText = translation.text
+                .replace(/\\n/g, " ")
+                .replace(/\\"/g, '"')
+                .replace(/\\\\/g, "\\")
+                .replace(/[\u0000-\u001F\u007F-\u009F]/g, "")
+                .trim();
+
+              if (cleanText === "") {
+                console.warn(
+                  `Empty translation for subtitle index ${subtitle.index} in chunk ${chunkIndex}`
+                );
+                showNotification(
+                  `Empty translation found for subtitle at timestamp ${subtitle.timestamp}`,
+                  "error"
+                );
+              }
+
+              translatedChunk.push({
+                index: subtitle.index,
+                timestamp: subtitle.timestamp,
+                text: cleanText || subtitle.text, // Use original text if translation is empty
+              });
+            } else {
+              console.warn(
+                `No translation found for subtitle index ${subtitle.index} in chunk ${chunkIndex}`
+              );
+              showNotification(
+                `Failed to translate subtitle at timestamp ${subtitle.timestamp}`,
+                "error"
+              );
+              translatedChunk.push(subtitle);
+            }
+          });
+
+          // Verify all subtitles are accounted for
+          if (translatedChunk.length !== chunk.length) {
+            console.error(
+              `Translation count mismatch in chunk ${chunkIndex}. Expected: ${chunk.length}, Got: ${translatedChunk.length}`
+            );
+            throw new Error("Translation count mismatch");
+          }
+
+          // Sort by original index
+          translatedChunk.sort((a, b) => a.index - b.index);
+
+          // Add delay between chunks
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
+          return translatedChunk;
+        } catch (error) {
+          console.error(`Error in chunk ${chunkIndex}:`, error.message);
+
+          if (error.message.includes("API_KEY")) {
+            progressContainer.style.display = "none";
+            progressBar.style.width = "0%";
+            progressText.textContent =
+              "Translation failed due to API key error.";
+            showNotification(
+              "Translation failed due to API key error",
+              "error"
+            );
+            throw new Error("API_KEY_ERROR");
+          }
+
+          showNotification(
+            `Error processing chunk ${chunkIndex + 1} of ${totalChunks}`,
+            "error"
+          );
+          return chunk.map((subtitle) => ({
+            index: subtitle.index,
+            timestamp: subtitle.timestamp,
+            text: subtitle.text,
+          }));
+        }
+      }
+
+      function generateSubtitleFile(subtitles, originalFileName) {
+        const fileExtension = originalFileName.substring(
+          originalFileName.lastIndexOf(".")
+        );
+        let output = "";
+
+        // Sort subtitles by index to ensure correct order
+        subtitles.sort((a, b) => a.index - b.index);
+
+        subtitles.forEach((subtitle, i) => {
+          // Add subtitle number (1-based index)
+          output += `${i + 1}\n`;
+          // Add timestamp
+          output += `${subtitle.timestamp}\n`;
+          // Add translated text
+          output += `${subtitle.text}\n\n`;
+        });
+
+        return output;
+      }
+
+      function downloadFile(content, originalFileName) {
+        // Create the new filename with _persian suffix
+        const fileExtension = originalFileName.substring(
+          originalFileName.lastIndexOf(".")
+        );
+        const baseName = originalFileName.substring(
+          0,
+          originalFileName.lastIndexOf(".")
+        );
+        const newFileName = `${baseName}_persian${fileExtension}`;
+
+        // Create blob and download
+        const blob = new Blob([content], { type: "text/plain;charset=UTF-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = newFileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    </script>
+  </body>
+</html>
